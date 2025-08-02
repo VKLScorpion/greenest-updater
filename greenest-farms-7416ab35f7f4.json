@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "greenest-farms",
+  "private_key_id": "7416ab35f7f4adc25cb2d8c0db5e9d523250dcc2",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCTgcO7mYshkP1B\naODzA/rw2ZwHCpZFKBnsjr7+9Tv0k7vI4VeAyEVEw9zwrlpQL2ndcxzA8kHktbRO\nwuL9iwlqYwB4zk7Fq3ymwOOtKxhf+rknhPE8iuhF0FGK8AK2B3ktJl8yH3X4WF+y\neRV1bH0MUrYuWm478ecOJIKexoJQs+pi8cergMkFU5U0IslzLSeCbGwTp41jKMzW\nwH0tQDbh5OvEUjI1Ewpx7VToX/dv1Fger6+mnx3m0BpluO1u0U/G/3p3QG6gLiQZ\nwzYeI3X8HU24RppvOlKKeCXnBjV6/q+Wio7QMELXsTGooLXqPdeJ4GSE6kl55RwZ\nxNoSAKZVAgMBAAECggEAA8RNT4ncU0iHfcdexo3sN1YomscYLx7Bn2MbeQQhr71N\nub5EFLI95JjnguTs7P3Ho2OoZmakAfdq6epQ+h5gve0BICn35H/cgHSjYR1yiKbs\n2gJrglCIyG70BMsxbTJpKNrr6j+Cl3Yy8Wo6qaOSLkGhdzMQ0WqRbDDIqM3TGkTy\nqIuEbNNIJ2Kx9pob6js12F59lXzwHm+tCS+VVxmhdwE8MDENWy9AC1wq1ubLMi4Y\n1zTYPqehPMAwPsO9etdEKfFUh1iBspr7dAIxBl1D7Eb6WhvJn7dszv8G0BAn8GWK\ngW1MIUfGK6MaMre1dCgtcmNXg2K0zql47Zorj1h7eQKBgQDENBlRUVRJUoKWia2U\nJpl1AZstOELEGy6pokoy7hwI5sUPn3hMTVczwC1I6gQ1ONT4mQJqz4Hz3J69I/bV\nyAeopCZH6+c02icwdFbdzhG2NwOBO/l8olsre6YnIkxH54lBOQrJj/b4r9GkbWqz\nc6sWsC2WvlQT2mz8yq2olgLjTQKBgQDAdlR1OqTit8XJp/yRKpl5BvElXbd5G8Ak\neaxfOc4DFDfo4HOiLpDb0IcMryPslxdisCJynX2gEht9qsvok6rrPMbloH2WJbr4\nVqmJ5zfh+gQyusQjhenyDgRWU8qwrNDUfLVqElyUxzIdRottXj6Uwsk3L1jaiiBE\nrApH+wW7KQKBgBn99OSq64mTHq2mq5IW0vmHLvF8pIuqNjJOx5mbpacgOzbon10s\nWcMHUHh6V/hdAQm163YO615M+dKAszB7AVi79j5M6CI+TDbFEsTribkj7JjwQwrZ\nz04hYU+J4aUc7TfwwJcXNVaYpCMuQ5ZmWmH1EPUJXcYLh6itiPfud495AoGAFR+n\nq2oxWLTk33oxjVlImPD7HKfJkGBMWXSFR7pXcx0P+d5Qsrc7rPSZLfo3DiuTJIDC\ndyPz+tKh88wAL1mtw73a8q8HuagQeltApmMbThEbztmS13dGMwv4y+TMdVGyZe/+\nFVNImAe451+rw+g5JCiw3v6yWOIaIo9jXX0epukCgYEAtHXo1s27wZ+vafY83lKH\nFuyeKUtWZc4xTRvTlH0g/gR3rpspUIQw4g7uaIl93MHBF4D1P6hP8FfjRUZVZyNT\njPJgpoEXiCP3tDLW62tvvsxBsDb8N8DCoVlmBZAECndW5JQ9t/1OX6L85mrVzvwS\nXBeyH2XKRgLxrfWWySxPkrg=\n-----END PRIVATE KEY-----\n",
+  "client_email": "greenest@greenest-farms.iam.gserviceaccount.com",
+  "client_id": "113871969500036947610",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/greenest%40greenest-farms.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
