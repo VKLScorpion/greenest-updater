@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, request, jsonify
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -9,11 +10,12 @@ import requests
 SHEET_ID = "1-KbaMwtf33eXfYl5BDydEvaCYpPYH3xSYTQc6fCqFT4"
 SHEET_TAB_NAME = "GreeNest Farm Tracker"
 TELEGRAM_BOT_TOKEN = "8386540429:AAFpezbraNgUJgpGkV97dp0jBH-QYkLzwYY"
-TELEGRAM_CHAT_ID = "-1002115751010"  # GreeNest Farms group
+TELEGRAM_CHAT_ID = "-1002115751010"
 
 # === GOOGLE SHEETS SETUP ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("greenest-farms-7416ab35f7f4.json", scope)
+google_creds = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+creds = ServiceAccountCredentials.from_json_keyfile_dict(google_creds, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
