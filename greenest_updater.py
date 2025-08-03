@@ -3,6 +3,9 @@ import gspread
 import os
 import json
 import requests
+from datetime import datetime
+from werkzeug.utils import secure_filename
+import tempfile
 from oauth2client.service_account import ServiceAccountCredentials
 
 app = Flask(__name__)
@@ -31,18 +34,9 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # === Dashboard Headers ===
 DASHBOARD_HEADERS = [
-    "Tray Name",
-    "Seed Type",
-    "Growth %",
-    "Health",
-    "Days Since Sowing",
-    "Est. Harvest",
-    "Lighting Stage",
-    "Mist Level",
-    "Notes",
-    "Recommended Action",
-    "Environment Flags",
-    "Timestamp"
+    "Tray Name", "Seed Type", "Growth %", "Health", "Days Since Sowing",
+    "Est. Harvest", "Lighting Stage", "Mist Level", "Notes",
+    "Recommended Action", "Environment Flags", "Timestamp"
 ]
 
 # === Push Telegram Message ===
@@ -97,20 +91,68 @@ def process_and_push(data):
         print("📄 Appending row:", row)
         sheet.append_row(row)
 
-        # Send Telegram alert
-        message = f"""✅ *Tray Update*: `{data.get('tray_name')}`
-• *Seed*: {data.get('seed_type')}
-• *Growth*: {data.get('growth_percent')}%
-• *Health*: {data.get('health')}
-• *Action*: {data.get('recommended_action')}
-• *Notes*: {data.get('notes')}
-• *Time*: {data.get('timestamp')}
-"""
+        message = f"""✅ *Tray Update*: `{data.get('tray_name')}`\n• *Seed*: {data.get('seed_type')}\n• *Growth*: {data.get('growth_percent')}%\n• *Health*: {data.get('health')}\n• *Action*: {data.get('recommended_action')}\n• *Notes*: {data.get('notes')}\n• *Time*: {data.get('timestamp')}"""
         send_telegram_message(message)
 
         return jsonify({"status": "success", "row": row})
     except Exception as e:
         print("❌ Append failed:", str(e))
+        return jsonify({"status": "failed", "error": str(e)}), 500
+
+# === Upload Image & Analyze ===
+@app.route("/analyze_tray", methods=["POST"])
+def analyze_tray():
+    try:
+        image_file = request.files.get("image")
+        tray_name = request.form.get("tray_name", "Unnamed_Tray")
+
+        if not image_file:
+            return jsonify({"status": "failed", "error": "No image uploaded"}), 400
+
+        temp_path = os.path.join(tempfile.gettempdir(), secure_filename(image_file.filename))
+        image_file.save(temp_path)
+
+        # Simulated ML Analysis
+        growth_percent = 90 + hash(tray_name) % 10
+        health = 8.0 + hash(temp_path) % 20 / 10
+        est_harvest = "Tomorrow"
+        notes = "Looks healthy"
+        lighting_stage = "Stage 2"
+        mist_level = "Medium"
+        days_since_sowing = 6 + hash(tray_name) % 3
+
+        row_data = {
+            "tray_name": tray_name,
+            "seed_type": "Chia" if "Chia" in tray_name else "Mix",
+            "growth_percent": growth_percent,
+            "health": health,
+            "days_since_sowing": days_since_sowing,
+            "est_harvest": est_harvest,
+            "lighting_stage": lighting_stage,
+            "mist_level": mist_level,
+            "notes": notes,
+            "recommended_action": "Harvest soon" if growth_percent > 95 else "Keep monitoring",
+            "environment_flags": "OK",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        set_headers_if_missing()
+        sheet.append_row(list(row_data.values()))
+
+        summary = (
+            f"🧪 *Tray:* {tray_name}\n"
+            f"🌱 Growth: {growth_percent}%\n"
+            f"💚 Health: {health}/10\n"
+            f"🗓 Days Since Sowing: {days_since_sowing}\n"
+            f"🔆 Light: {lighting_stage} | 💧 Mist: {mist_level}\n"
+            f"📌 Action: {row_data['recommended_action']}"
+        )
+
+        send_telegram_message(summary)
+        return jsonify({"status": "success", "summary": summary})
+
+    except Exception as e:
+        print("❌ Analysis error:", str(e))
         return jsonify({"status": "failed", "error": str(e)}), 500
 
 # === Flask Routes ===
