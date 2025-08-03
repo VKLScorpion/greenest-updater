@@ -12,8 +12,8 @@ creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
-SHEET_ID = "1-KbaMwtf33eXfYl5BDydEvaCYpPYH3xSYTQc6fCqFT4"
-SHEET_TAB_NAME = "GreeNest Farm Tracker"
+SHEET_ID = os.getenv("SHEET_ID")
+SHEET_TAB_NAME = os.getenv("SHEET_TAB_NAME")
 
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
