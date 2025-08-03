@@ -11,7 +11,7 @@ def root():
     return {"message": "Relay is running"}
 
 # Your actual backend endpoint
-GREENEST_BACKEND_URL = os.getenv("GREENEST_BACKEND_URL", "https://greenest-updater.onrender.com/push_data")
+GREENEST_BACKEND_URL = "https://greenest-updater.onrender.com/push_tray_data"
 
 @app.post("/relay")
 async def relay_data(req: Request):
