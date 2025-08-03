@@ -1,4 +1,3 @@
-# greenest_updater.py
 from flask import Flask, request, jsonify
 import gspread
 import os
@@ -28,16 +27,22 @@ except Exception as e:
 def process_and_push(data):
     try:
         print("🔔 Updater received payload:", data)
+
         row = [
             data.get("tray_name", "N/A"),
+            data.get("seed_type", "N/A"),
             data.get("growth_percent", "N/A"),
             data.get("health_score", "N/A"),
+            data.get("notes", "N/A"),
             data.get("recommended_action", "N/A"),
+            data.get("environment_flags", "N/A"),
             data.get("timestamp", "N/A")
         ]
+
         print("📄 Appending row:", row)
         sheet.append_row(row)
         return jsonify({"status": "success", "row": row})
+
     except Exception as e:
         print("❌ Error while appending:", str(e))
         return jsonify({"status": "failed", "error": str(e)}), 500
