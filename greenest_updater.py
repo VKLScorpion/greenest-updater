@@ -6,25 +6,29 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 app = Flask(__name__)
 
-# Setup Google Sheets API client
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+# ✅ Setup Google Sheets Client
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS_JSON", "{}"))
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 SHEET_ID = os.getenv("SHEET_ID")
 SHEET_TAB_NAME = os.getenv("SHEET_TAB_NAME")
 
-print("✅ Trying to open Sheet ID:", SHEET_ID)
-print("✅ Tab name:", SHEET_TAB_NAME)
+print("✅ Connecting to Sheet ID:", SHEET_ID)
+print("📋 Target tab:", SHEET_TAB_NAME)
 
 try:
     sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 except Exception as e:
-    print("❌ Failed to access sheet:", str(e))
+    print("❌ Could not access sheet:", str(e))
     sheet = None
 
-# Define column headers
+# 📌 Column headers for microgreens dashboard
 DASHBOARD_HEADERS = [
     "Tray Name",
     "Seed Type",
@@ -45,14 +49,15 @@ def set_headers_if_missing():
         existing = sheet.row_values(1)
         if existing != DASHBOARD_HEADERS:
             print("⚙️ Updating headers...")
-            sheet.delete_row(1) if existing else None
+            if existing:
+                sheet.delete_row(1)
             sheet.insert_row(DASHBOARD_HEADERS, 1)
     except Exception as e:
-        print("⚠️ Could not verify headers:", str(e))
+        print("⚠️ Header setup failed:", str(e))
 
 def process_and_push(data):
     try:
-        print("🔔 Received payload:", data)
+        print("🔔 Incoming data:", data)
         set_headers_if_missing()
 
         row = [
@@ -70,22 +75,25 @@ def process_and_push(data):
             data.get("timestamp", "N/A")
         ]
 
-        print("📄 Appending row:", row)
+        print("📄 Writing row:", row)
         sheet.append_row(row)
         return jsonify({"status": "success", "row": row})
     except Exception as e:
         print("❌ Append failed:", str(e))
         return jsonify({"status": "failed", "error": str(e)}), 500
 
+# 📥 API POST endpoints
 @app.route("/push_tray_data", methods=["POST"])
 @app.route("/push_data", methods=["POST"])
 def push_data():
-    data = request.json
+    data = request.get_json(force=True)
     return process_and_push(data)
 
+# 🟢 Health check
 @app.route("/", methods=["GET"])
 def index():
-    return jsonify({"message": "✅ GreeNest Flask app is running"}), 200
+    return jsonify({"message": "✅ GreeNest Updater is running"}), 200
 
+# 🏁 Launch for local debug
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
