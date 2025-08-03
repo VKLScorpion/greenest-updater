@@ -15,6 +15,9 @@ client = gspread.authorize(creds)
 SHEET_ID = os.getenv("SHEET_ID")
 SHEET_TAB_NAME = os.getenv("SHEET_TAB_NAME")
 
+print("Trying to open Sheet ID:", SHEET_ID)
+print("Tab name:", SHEET_TAB_NAME)
+
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
 def process_and_push(data):
