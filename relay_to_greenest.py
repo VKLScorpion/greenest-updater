@@ -5,7 +5,12 @@ import os
 
 app = FastAPI()
 
-# Set this to your actual Render backend URL
+# For Render health check
+@app.get("/")
+def root():
+    return {"message": "Relay is running"}
+
+# Your actual backend endpoint
 GREENEST_BACKEND_URL = os.getenv("GREENEST_BACKEND_URL", "https://greenest-updater.onrender.com/push_data")
 
 @app.post("/relay")
