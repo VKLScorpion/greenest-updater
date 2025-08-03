@@ -41,8 +41,16 @@ def push_data():
     data = request.json
     return process_and_push(data)
 
-# Optional alias for relay compatibility
 @app.route("/push_data", methods=["POST"])
 def push_data_alias():
     data = request.json
     return process_and_push(data)
+
+# 🟢 Health check route
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "GreeNest Flask app is running"}), 200
+
+# 🟢 REQUIRED: Start Flask server
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000, debug=True)
