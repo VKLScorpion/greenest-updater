@@ -20,8 +20,18 @@ print("Tab name:", SHEET_TAB_NAME)
 
 sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
+# ✅ Ensure headers are present in first row
+def ensure_headers():
+    expected_headers = ["tray_name", "growth_percent", "health_score", "recommended_action", "timestamp"]
+    existing_headers = sheet.row_values(1)
+    if existing_headers != expected_headers:
+        print("Setting up headers on sheet...")
+        sheet.insert_row(expected_headers, 1)
+
+# ✅ Main data appending logic
 def process_and_push(data):
     try:
+        ensure_headers()  # Add headers if missing
         row = [
             data.get("tray_name"),
             data.get("growth_percent"),
@@ -36,21 +46,23 @@ def process_and_push(data):
         print("Error while appending:", str(e))
         return jsonify({"status": "failed", "error": str(e)}), 500
 
+# 🟢 Standard push route
 @app.route("/push_tray_data", methods=["POST"])
 def push_data():
     data = request.json
     return process_and_push(data)
 
+# 🟢 Relay compatibility
 @app.route("/push_data", methods=["POST"])
 def push_data_alias():
     data = request.json
     return process_and_push(data)
 
-# 🟢 Health check route
+# 🟢 Health check
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({"message": "GreeNest Flask app is running"}), 200
 
-# 🟢 REQUIRED: Start Flask server
+# 🟢 Start Flask server on correct port for Render
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
