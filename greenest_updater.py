@@ -24,15 +24,46 @@ except Exception as e:
     print("❌ Failed to access sheet:", str(e))
     sheet = None
 
+# Define column headers
+DASHBOARD_HEADERS = [
+    "Tray Name",
+    "Seed Type",
+    "Growth %",
+    "Health",
+    "Days Since Sowing",
+    "Est. Harvest",
+    "Lighting Stage",
+    "Mist Level",
+    "Notes",
+    "Recommended Action",
+    "Environment Flags",
+    "Timestamp"
+]
+
+def set_headers_if_missing():
+    try:
+        existing = sheet.row_values(1)
+        if existing != DASHBOARD_HEADERS:
+            print("⚙️ Updating headers...")
+            sheet.delete_row(1) if existing else None
+            sheet.insert_row(DASHBOARD_HEADERS, 1)
+    except Exception as e:
+        print("⚠️ Could not verify headers:", str(e))
+
 def process_and_push(data):
     try:
-        print("🔔 Updater received payload:", data)
+        print("🔔 Received payload:", data)
+        set_headers_if_missing()
 
         row = [
             data.get("tray_name", "N/A"),
             data.get("seed_type", "N/A"),
             data.get("growth_percent", "N/A"),
-            data.get("health_score", "N/A"),
+            data.get("health", "N/A"),
+            data.get("days_since_sowing", "N/A"),
+            data.get("est_harvest", "N/A"),
+            data.get("lighting_stage", "N/A"),
+            data.get("mist_level", "N/A"),
             data.get("notes", "N/A"),
             data.get("recommended_action", "N/A"),
             data.get("environment_flags", "N/A"),
@@ -42,18 +73,13 @@ def process_and_push(data):
         print("📄 Appending row:", row)
         sheet.append_row(row)
         return jsonify({"status": "success", "row": row})
-
     except Exception as e:
-        print("❌ Error while appending:", str(e))
+        print("❌ Append failed:", str(e))
         return jsonify({"status": "failed", "error": str(e)}), 500
 
 @app.route("/push_tray_data", methods=["POST"])
-def push_data():
-    data = request.json
-    return process_and_push(data)
-
 @app.route("/push_data", methods=["POST"])
-def push_data_alias():
+def push_data():
     data = request.json
     return process_and_push(data)
 
