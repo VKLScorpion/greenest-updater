@@ -20,6 +20,8 @@ sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
 # === Telegram Bot Config ===
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")
 
 # === Send Telegram Message ===
 def send_telegram(chat_id, text):
@@ -58,6 +60,23 @@ def push_to_sheet(data):
     sheet.append_row(row)
     print("✅ Row pushed to sheet:", row)
 
+# === Build Dashboard Summary ===
+def build_dashboard_summary():
+    data = sheet.get_all_records()
+    grouped = {}
+    for row in data:
+        tray = row.get("Tray Name", "Unknown")
+        if tray not in grouped:
+            grouped[tray] = []
+        grouped[tray].append(row)
+
+    summary = "📊 *Daily Microgreens Summary*\n\n"
+    for tray, entries in grouped.items():
+        latest = entries[-1]
+        summary += f"""🌱 `{tray}`\n• Growth: {latest['Growth %']}%\n• Health: {latest['Health']}\n• Action: {latest['Recommended Action']}\n• Time: {latest['Timestamp']}\n\n"""
+
+    return summary
+
 # === Health Check ===
 @app.route("/", methods=["GET"])
 def index():
@@ -70,39 +89,44 @@ def telegram_webhook():
     message = body.get("message", {})
     chat_id = message.get("chat", {}).get("id")
 
-    # Check for image
     if "photo" in message:
         tray_name = message.get("caption", "").strip()
         if not tray_name:
             send_telegram(chat_id, "⚠️ Please send the tray name in the *caption* of the image.")
             return jsonify({"status": "missing_caption"}), 200
 
-        # Get the largest image file
         photo = message["photo"][-1]
         file_id = photo["file_id"]
         file_info = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}").json()
         file_path = file_info["result"]["file_path"]
         image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
 
-        # Analyze tray (mock model for now)
         result = mock_image_analysis(image_url, tray_name)
-
-        # Push to Google Sheet
         push_to_sheet(result)
 
-        # Notify Telegram user
-        summary = f"""🌱 *Tray Update*: `{tray_name}`
-• *Growth*: {result['growth_percent']}%
-• *Health*: {result['health']}
-• *Action*: {result['recommended_action']}
-• *Time*: {result['timestamp']}"""
+        summary = f"""🌱 *Tray Update*: `{tray_name}`\n• *Growth*: {result['growth_percent']}%\n• *Health*: {result['health']}\n• *Action*: {result['recommended_action']}\n• *Time*: {result['timestamp']}"""
         send_telegram(chat_id, summary)
 
         return jsonify({"status": "image_processed", "tray": tray_name}), 200
 
-    # No image uploaded
+    elif message.get("text", "").strip().lower() == "/summary":
+        summary = build_dashboard_summary()
+        send_telegram(chat_id, summary)
+        return jsonify({"status": "summary_sent"}), 200
+
     send_telegram(chat_id, "📸 Please upload an image with a tray name as the caption.")
     return jsonify({"status": "no_image"}), 200
+
+# === Summary Trigger Endpoint (for GitHub Actions) ===
+@app.route("/trigger_summary", methods=["POST"])
+def trigger_summary():
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {TRIGGER_SECRET}":
+        return jsonify({"status": "unauthorized"}), 403
+
+    summary = build_dashboard_summary()
+    send_telegram(TELEGRAM_CHAT_ID, summary)
+    return jsonify({"status": "summary_sent"}), 200
 
 # === Run Server ===
 if __name__ == "__main__":
