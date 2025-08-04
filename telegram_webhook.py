@@ -1,5 +1,3 @@
-# telegram_webhook.py (with real Hugging Face model integration)
-
 from flask import Flask, request, jsonify
 import os
 import requests
@@ -24,7 +22,7 @@ sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")
-HF_INFERENCE_API = os.getenv("HF_INFERENCE_API")  # Hugging Face Inference Endpoint URL
+HF_SPACE_URL = os.getenv("HF_INFERENCE_API")  # e.g., https://vikkl1990-greenest-inference.hf.space
 
 # === Send Telegram Message ===
 def send_telegram(chat_id, text):
@@ -39,17 +37,28 @@ def send_telegram(chat_id, text):
     except Exception as e:
         print("❌ Telegram message failed:", e)
 
-# === Real Image Analyzer via Hugging Face ===
+# === Analyze Image using Hugging Face Gradio Space ===
 def analyze_tray_real(image_url, tray_name):
     try:
-        response = requests.post(
-            HF_INFERENCE_API,
-            json={"image_url": image_url, "tray_name": tray_name},
+        res = requests.post(
+            f"{HF_SPACE_URL}/run/predict",
+            headers={"Content-Type": "application/json"},
+            json={"data": [image_url, tray_name]},
             timeout=60
         )
-        return response.json()
+        res.raise_for_status()
+        output = res.json()
+
+        if "data" in output:
+            result = output["data"][0]
+            result["tray_name"] = tray_name
+            result["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            return result
+        else:
+            raise Exception("Invalid response format")
+
     except Exception as e:
-        print("❌ Analysis failed:", e)
+        print("❌ Analysis error:", str(e))
         return {
             "tray_name": tray_name,
             "seed_type": "N/A",
@@ -65,14 +74,13 @@ def analyze_tray_real(image_url, tray_name):
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-# === Push data to Google Sheet ===
+# === Push to Google Sheet ===
 def push_to_sheet(data):
     headers = sheet.row_values(1)
     row = [data.get(h, "N/A") for h in headers]
     sheet.append_row(row)
-    print("✅ Row pushed to sheet:", row)
 
-# === Build Dashboard Summary ===
+# === Build Summary ===
 def build_dashboard_summary():
     data = sheet.get_all_records()
     grouped = {}
@@ -86,7 +94,6 @@ def build_dashboard_summary():
     for tray, entries in grouped.items():
         latest = entries[-1]
         summary += f"""🌱 `{tray}`\n• Growth: {latest['Growth %']}%\n• Health: {latest['Health']}\n• Action: {latest['Recommended Action']}\n• Time: {latest['Timestamp']}\n\n"""
-
     return summary
 
 # === Health Check ===
@@ -94,7 +101,7 @@ def build_dashboard_summary():
 def index():
     return jsonify({"message": "📡 Telegram Webhook for GreeNest is active"}), 200
 
-# === Telegram Webhook Endpoint ===
+# === Telegram Upload Handler ===
 @app.route("/webhook", methods=["POST"])
 def telegram_webhook():
     body = request.json
@@ -118,7 +125,6 @@ def telegram_webhook():
 
         summary = f"""🌱 *Tray Update*: `{tray_name}`\n• *Growth*: {result['growth_percent']}%\n• *Health*: {result['health']}\n• *Action*: {result['recommended_action']}\n• *Time*: {result['timestamp']}"""
         send_telegram(chat_id, summary)
-
         return jsonify({"status": "image_processed", "tray": tray_name}), 200
 
     elif message.get("text", "").strip().lower() == "/summary":
@@ -129,7 +135,7 @@ def telegram_webhook():
     send_telegram(chat_id, "📸 Please upload an image with a tray name as the caption.")
     return jsonify({"status": "no_image"}), 200
 
-# === Summary Trigger Endpoint (for GitHub Actions or cron) ===
+# === Cron Trigger for Daily Summary ===
 @app.route("/trigger_summary", methods=["POST"])
 def trigger_summary():
     auth = request.headers.get("Authorization", "")
@@ -140,6 +146,6 @@ def trigger_summary():
     send_telegram(TELEGRAM_CHAT_ID, summary)
     return jsonify({"status": "summary_sent"}), 200
 
-# === Run Server ===
+# === Run ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
