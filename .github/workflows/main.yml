@@ -1,0 +1,16 @@
+name: GreeNest Daily Tray Summary
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # 8 AM EST
+    - cron: "0 0 * * *"    # 8 PM EST
+  workflow_dispatch:       # Allows manual run
+
+jobs:
+  trigger-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger GreeNest Tray Summary via Render
+        run: |
+          curl -X POST "https://telegram-bot-lpr3.onrender.com/trigger_summary" \
+            -H "Authorization: Bearer ${{ secrets.GREENEST_WEBHOOK_KEY }}"
