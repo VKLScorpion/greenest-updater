@@ -1,3 +1,5 @@
+# telegram_webhook.py (with real Hugging Face model integration)
+
 from flask import Flask, request, jsonify
 import os
 import requests
@@ -20,8 +22,9 @@ sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
 # === Telegram Bot Config ===
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # group or user
-TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")      # for GitHub Actions
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")
+HF_INFERENCE_API = os.getenv("HF_INFERENCE_API")  # Hugging Face Inference Endpoint URL
 
 # === Send Telegram Message ===
 def send_telegram(chat_id, text):
@@ -36,29 +39,27 @@ def send_telegram(chat_id, text):
     except Exception as e:
         print("❌ Telegram message failed:", e)
 
-def analyze_image_via_huggingface(image_url, tray_name):
-    endpoint = os.getenv("HUGGINGFACE_API_URL")
-    token = os.getenv("HUGGINGFACE_API_TOKEN")
-
+# === Real Image Analyzer via Hugging Face ===
+def analyze_tray_real(image_url, tray_name):
     try:
         response = requests.post(
-            endpoint,
-            headers={"Authorization": f"Bearer {token}"},
-            json={"image_url": image_url, "tray_name": tray_name}
+            HF_INFERENCE_API,
+            json={"image_url": image_url, "tray_name": tray_name},
+            timeout=60
         )
         return response.json()
     except Exception as e:
-        print("❌ ML Analysis Error:", e)
+        print("❌ Analysis failed:", e)
         return {
             "tray_name": tray_name,
-            "seed_type": "Unknown",
-            "growth_percent": 0,
-            "health": 0,
-            "days_since_sowing": 0,
-            "est_harvest": "Unknown",
-            "lighting_stage": "Unknown",
-            "mist_level": "Unknown",
-            "notes": "Failed to analyze",
+            "seed_type": "N/A",
+            "growth_percent": "N/A",
+            "health": "N/A",
+            "days_since_sowing": "N/A",
+            "est_harvest": "N/A",
+            "lighting_stage": "N/A",
+            "mist_level": "N/A",
+            "notes": "Analysis failed",
             "recommended_action": "Check manually",
             "environment_flags": "Error",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -100,7 +101,6 @@ def telegram_webhook():
     message = body.get("message", {})
     chat_id = message.get("chat", {}).get("id")
 
-    # === Handle Image Uploads ===
     if "photo" in message:
         tray_name = message.get("caption", "").strip()
         if not tray_name:
@@ -113,7 +113,7 @@ def telegram_webhook():
         file_path = file_info["result"]["file_path"]
         image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
 
-        result = analyze_image_via_huggingface(image_url, tray_name)
+        result = analyze_tray_real(image_url, tray_name)
         push_to_sheet(result)
 
         summary = f"""🌱 *Tray Update*: `{tray_name}`\n• *Growth*: {result['growth_percent']}%\n• *Health*: {result['health']}\n• *Action*: {result['recommended_action']}\n• *Time*: {result['timestamp']}"""
@@ -121,7 +121,6 @@ def telegram_webhook():
 
         return jsonify({"status": "image_processed", "tray": tray_name}), 200
 
-    # === Handle /summary Command ===
     elif message.get("text", "").strip().lower() == "/summary":
         summary = build_dashboard_summary()
         send_telegram(chat_id, summary)
@@ -130,7 +129,7 @@ def telegram_webhook():
     send_telegram(chat_id, "📸 Please upload an image with a tray name as the caption.")
     return jsonify({"status": "no_image"}), 200
 
-# === Summary Trigger Endpoint (used by GitHub Actions or scheduler) ===
+# === Summary Trigger Endpoint (for GitHub Actions or cron) ===
 @app.route("/trigger_summary", methods=["POST"])
 def trigger_summary():
     auth = request.headers.get("Authorization", "")
@@ -141,6 +140,6 @@ def trigger_summary():
     send_telegram(TELEGRAM_CHAT_ID, summary)
     return jsonify({"status": "summary_sent"}), 200
 
-# === Start Server ===
+# === Run Server ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
