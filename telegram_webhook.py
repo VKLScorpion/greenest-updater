@@ -36,22 +36,33 @@ def send_telegram(chat_id, text):
     except Exception as e:
         print("❌ Telegram message failed:", e)
 
-# === Mock Image Analyzer (to be replaced with real ML model) ===
-def mock_image_analysis(image_url, tray_name):
-    return {
-        "tray_name": tray_name,
-        "seed_type": "Chia",
-        "growth_percent": 92.4,
-        "health": 9.1,
-        "days_since_sowing": 5,
-        "est_harvest": "In 2 days",
-        "lighting_stage": "Daylight",
-        "mist_level": "Moderate",
-        "notes": "Healthy & dense growth",
-        "recommended_action": "Harvest tomorrow",
-        "environment_flags": "None",
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+def analyze_image_via_huggingface(image_url, tray_name):
+    endpoint = os.getenv("HUGGINGFACE_API_URL")
+    token = os.getenv("HUGGINGFACE_API_TOKEN")
+
+    try:
+        response = requests.post(
+            endpoint,
+            headers={"Authorization": f"Bearer {token}"},
+            json={"image_url": image_url, "tray_name": tray_name}
+        )
+        return response.json()
+    except Exception as e:
+        print("❌ ML Analysis Error:", e)
+        return {
+            "tray_name": tray_name,
+            "seed_type": "Unknown",
+            "growth_percent": 0,
+            "health": 0,
+            "days_since_sowing": 0,
+            "est_harvest": "Unknown",
+            "lighting_stage": "Unknown",
+            "mist_level": "Unknown",
+            "notes": "Failed to analyze",
+            "recommended_action": "Check manually",
+            "environment_flags": "Error",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
 
 # === Push data to Google Sheet ===
 def push_to_sheet(data):
@@ -102,7 +113,7 @@ def telegram_webhook():
         file_path = file_info["result"]["file_path"]
         image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
 
-        result = mock_image_analysis(image_url, tray_name)
+        result = analyze_image_via_huggingface(image_url, tray_name)
         push_to_sheet(result)
 
         summary = f"""🌱 *Tray Update*: `{tray_name}`\n• *Growth*: {result['growth_percent']}%\n• *Health*: {result['health']}\n• *Action*: {result['recommended_action']}\n• *Time*: {result['timestamp']}"""
