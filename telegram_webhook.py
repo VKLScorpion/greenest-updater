@@ -20,8 +20,8 @@ sheet = client.open_by_key(SHEET_ID).worksheet(SHEET_TAB_NAME)
 
 # === Telegram Bot Config ===
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # group or user
+TRIGGER_SECRET = os.getenv("TRIGGER_SECRET")      # for GitHub Actions
 
 # === Send Telegram Message ===
 def send_telegram(chat_id, text):
@@ -89,6 +89,7 @@ def telegram_webhook():
     message = body.get("message", {})
     chat_id = message.get("chat", {}).get("id")
 
+    # === Handle Image Uploads ===
     if "photo" in message:
         tray_name = message.get("caption", "").strip()
         if not tray_name:
@@ -109,6 +110,7 @@ def telegram_webhook():
 
         return jsonify({"status": "image_processed", "tray": tray_name}), 200
 
+    # === Handle /summary Command ===
     elif message.get("text", "").strip().lower() == "/summary":
         summary = build_dashboard_summary()
         send_telegram(chat_id, summary)
@@ -117,7 +119,7 @@ def telegram_webhook():
     send_telegram(chat_id, "📸 Please upload an image with a tray name as the caption.")
     return jsonify({"status": "no_image"}), 200
 
-# === Summary Trigger Endpoint (for GitHub Actions) ===
+# === Summary Trigger Endpoint (used by GitHub Actions or scheduler) ===
 @app.route("/trigger_summary", methods=["POST"])
 def trigger_summary():
     auth = request.headers.get("Authorization", "")
@@ -128,6 +130,6 @@ def trigger_summary():
     send_telegram(TELEGRAM_CHAT_ID, summary)
     return jsonify({"status": "summary_sent"}), 200
 
-# === Run Server ===
+# === Start Server ===
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000, debug=True)
